@@ -9,29 +9,51 @@
 #HTTP METHODS REQUEST:
 #GET (read), POST (create), PUT (update/replace), DELETE (se entiende)
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, Field
 from uuid import UUID
+import models
+from database import engine, SessionLocal
+from sqlalchemy.orm import Session
 
 app = FastAPI()
 
-class Book(BaseModel):
-    id : UUID
+models.Base.metadata.create_all(bind=engine) #when this line run, it create the DB and the table if thus doesn't exists
+
+# This funtion handle the open and close of the DB
+def get_db(): 
+    try:
+        db = SessionLocal
+        yield db
+    finally:
+        db.close
+
+# Schema
+class Book(BaseModel):    
     title: str = Field(min_length=1)
     author: str = Field(min_length=1, max_length=100)
     description: str = Field(min_length=1, max_length=100)
     rating: int = Field(gt=-1, lt=101) # between 0 and 100
 
-BOOKS = [] 
+BOOKS = [] #it can be replace with a DB
 
 @app.post('/')
-def create_books(book:Book):
-    BOOKS.append(book)
+def create_books(book:Book, db: Session = Depends(get_db)):   
+
+    book_model = models.Books() #Mimic the model "Books"
+    book_model.title = book.title
+    book_model.author = book.author
+    book_model.description = book.description
+    book_model.rating = book.rating
+
+    db.add(book_model)
+    db.commit()
+
     return book
 
 @app.get('/') #'/{}' path parameter
-def read_api():
-    return BOOKS
+def read_api(db: Session = Depends(get_db)):
+    return db.query(models.Books).all()
 
 @app.put('/{book_id}')
 def update_book(book_id: UUID, book:Book):
