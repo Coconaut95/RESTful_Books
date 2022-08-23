@@ -1,5 +1,3 @@
-from ast import Str
-from re import S
 from sqlalchemy import Column, Integer, String
 
 from database import Base

@@ -37,6 +37,11 @@ class Book(BaseModel):
 
 BOOKS = [] #it can be replace with a DB
 
+
+@app.get('/') #'/{}' path parameter
+def read_api(db: Session = Depends(get_db)):
+    return db.query(models.Books).all()
+
 @app.post('/')
 def create_books(book:Book, db: Session = Depends(get_db)):   
 
@@ -50,10 +55,6 @@ def create_books(book:Book, db: Session = Depends(get_db)):
     db.commit()
 
     return book
-
-@app.get('/') #'/{}' path parameter
-def read_api(db: Session = Depends(get_db)):
-    return db.query(models.Books).all()
 
 @app.put('/{book_id}')
 def update_book(book_id: UUID, book:Book):
